@@ -8,7 +8,21 @@
 <style>
     :root { --primary: #3498db; --primary-dark: #2980b9; }
     body { font-family: 'Sarabun', sans-serif; background-color: #f4f6f7; padding: 15px; display: flex; justify-content: center; }
-    .app-container { width: 100%; max-width: 500px; background: white; border-radius: 20px; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); border: 3px solid var(--primary); text-align: center; }
+    .app-container { 
+    width: 100%; 
+    max-width: 500px; 
+    /* ปรับพื้นหลังให้เป็นสีขาวกึ่งโปร่งใส */
+    background: rgba(255, 255, 255, 0.7); 
+    border-radius: 20px; 
+    padding: 20px; 
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15); 
+    /* เพิ่มความล้ำด้วยการเบลอพื้นหลัง */
+    backdrop-filter: blur(10px); 
+    -webkit-backdrop-filter: blur(10px);
+    /* ลบเส้นกรอบเดิมออก */
+    border: 1px solid rgba(255, 255, 255, 0.5); 
+    text-align: center; 
+}
     
     .items-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px; }
     .item { background: #ebf5fb; padding: 8px; border-radius: 10px; border: 2px solid #d6eaf8; font-weight: bold; color: #2c3e50; font-size: 13px; transition: 0.2s;}
