@@ -11,15 +11,12 @@
     .app-container { 
     width: 100%; 
     max-width: 500px; 
-    /* ปรับพื้นหลังให้เป็นสีขาวกึ่งโปร่งใส */
     background: rgba(255, 255, 255, 0.7); 
     border-radius: 20px; 
     padding: 20px; 
     box-shadow: 0 8px 32px rgba(0,0,0,0.15); 
-    /* เพิ่มความล้ำด้วยการเบลอพื้นหลัง */
     backdrop-filter: blur(10px); 
     -webkit-backdrop-filter: blur(10px);
-    /* ลบเส้นกรอบเดิมออก */
     border: 1px solid rgba(255, 255, 255, 0.5); 
     text-align: center; 
 }
@@ -38,7 +35,7 @@
     .btn-mic.listening { background: #2ecc71; box-shadow: 0 4px 0 #27ae60; animation: pulse 1s infinite; }
     
     @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
-    #status-text { color: #7f8c8d; font-size: 14px; margin-top: 15px; font-weight: bold;}
+    #status-text { color: #2c3e50; font-size: 14px; margin-top: 15px; font-weight: bold;}
 
     #login-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(5px); z-index: 2000; flex-direction: column; justify-content: center; align-items: center; }
     .modal-box { background: white; padding: 30px; border-radius: 15px; width: 85%; max-width: 350px; box-shadow: 0 15px 30px rgba(0,0,0,0.2); text-align: center; }
@@ -54,7 +51,7 @@
     <div class="items-grid" id="items-grid"></div>
     
     <div class="chat-box" id="chat-box">
-        <div style="text-align: center; color: #bdc3c7; font-size: 14px;">เริ่มการสนทนาโดยกดปุ่มไมค์</div>
+        <div style="text-align: center; color: #7f8c8d; font-size: 14px;">เริ่มการสนทนาโดยกดปุ่มไมค์</div>
     </div>
     
     <button class="btn-mic" id="mic-btn" onclick="toggleMic()">🎤</button>
@@ -140,6 +137,11 @@
 
         recognition.onresult = function(event) {
             const transcript = event.results[0][0].transcript.toLowerCase();
+            
+            // เคลียร์สถานะทันทีเมื่อได้ยินเสียง เพื่อป้องกันไมค์ค้าง
+            isListening = false;
+            micBtn.classList.remove('listening');
+            
             addMessage(transcript, 'user');
             processInput(transcript);
         };
@@ -155,7 +157,7 @@
                     statusText.style.color = "#e74c3c";
                 }
             } else {
-                statusText.innerText = "เกิดข้อผิดพลาด ลองกดอีกครั้ง";
+                statusText.innerText = "ระบบไมค์ติดขัด ลองกดใหม่อีกครั้ง (" + event.error + ")";
                 statusText.style.color = "#e74c3c";
             }
             stopMic();
@@ -173,22 +175,33 @@
     function toggleMic() {
         if (!SpeechRecognition) return;
         
+        // ตัดเสียง AI ทันทีถ้าเด็กกดปุ่มไมค์แทรกตอน AI กำลังพูด
+        window.speechSynthesis.cancel();
+
         if (isListening) {
             recognition.stop();
         } else {
-            if (!conversationActive) {
-                chatBox.innerHTML = ''; 
-                currentScore = 0; 
-                selectedItemKey = null;
-                highlightItem(null);
-                conversationActive = true;
-                conversationStep = 1;
-                addMessage("Good afternoon. How can I help you?", 'ai');
-                speakText("Good afternoon. How can I help you?", () => { 
-                    recognition.start(); 
-                });
-            } else {
-                recognition.start();
+            try {
+                if (!conversationActive) {
+                    chatBox.innerHTML = ''; 
+                    currentScore = 0; 
+                    selectedItemKey = null;
+                    highlightItem(null);
+                    conversationActive = true;
+                    conversationStep = 1;
+                    addMessage("Good afternoon. How can I help you?", 'ai');
+                    speakText("Good afternoon. How can I help you?", () => { 
+                        try { recognition.start(); } catch(e) {} 
+                    });
+                } else {
+                    // ปลุกไมค์ให้ตื่น แม้ระบบจะจำสถานะผิดพลาด
+                    recognition.start();
+                }
+            } catch(error) {
+                console.log("Wake up error:", error);
+                // บังคับรีเซ็ตถ้าเกิดอาการค้าง
+                recognition.stop();
+                setTimeout(() => { try { recognition.start(); } catch(e){} }, 300);
             }
         }
     }
@@ -198,7 +211,7 @@
         micBtn.classList.remove('listening');
         if(conversationActive) {
             statusText.innerText = "กดไมค์เพื่อตอบกลับ";
-            statusText.style.color = "#7f8c8d";
+            statusText.style.color = "#2c3e50";
         }
     }
 
