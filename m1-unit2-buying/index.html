@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Speaking Practice - Buying Things (Smart AI)</title>
+<title>ม.1 Unit2 Buying souvenir with AI</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
 <style>
     :root { --primary: #3498db; --primary-dark: #2980b9; }
@@ -26,7 +26,6 @@
     @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
     #status-text { color: #7f8c8d; font-size: 14px; margin-top: 15px; font-weight: bold;}
 
-    /* Modal Styles */
     #login-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(5px); z-index: 2000; flex-direction: column; justify-content: center; align-items: center; }
     .modal-box { background: white; padding: 30px; border-radius: 15px; width: 85%; max-width: 350px; box-shadow: 0 15px 30px rgba(0,0,0,0.2); text-align: center; }
     .modal-box input { width: 90%; padding: 12px; margin-bottom: 15px; border: 1px solid #dfe6e9; border-radius: 8px; font-size: 16px; text-align: center; box-sizing: border-box; }
@@ -36,7 +35,7 @@
 <body>
 
 <div class="app-container">
-    <h2 style="color: var(--primary-dark); margin-top: 0;">🎙️ Speaking Practice</h2>
+    <h2 style="color: var(--primary-dark); margin-top: 0;">🎙️ ม.1 Unit2 Buying souvenir with AI</h2>
     
     <div class="items-grid" id="items-grid"></div>
     
@@ -64,7 +63,7 @@
 
 <script>
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxd_UGE1ZY_1dcB3B7l0Vy8azxhuuFoc_kftJ7QZ1Nc4XIaXGKF9RPs8WxhZ0K5VyVN/exec';
-    const LESSON_NAME = 'ม.1 Unit2 Speaking Practice';
+    const LESSON_NAME = 'ม.1 Unit2 Buying souvenir with AI';
 
     const chatBox = document.getElementById('chat-box');
     const micBtn = document.getElementById('mic-btn');
@@ -74,10 +73,10 @@
     let recognition;
     let isListening = false;
     let conversationActive = false;
+    let conversationStep = 0;
     let currentScore = 0;
     let selectedItemKey = null;
 
-    // ฐานข้อมูลสินค้าทั้ง 8 อย่าง
     const itemDB = {
         'keyrings': { name: 'key rings', priceText: 'four', icon: '🔑' },
         'doll': { name: 'doll', priceText: 'six', icon: '💂‍♂️' },
@@ -90,7 +89,6 @@
     };
     const itemKeys = Object.keys(itemDB);
 
-    // สร้าง Grid สินค้าบนหน้าจอ
     function buildItemsGrid() {
         itemsGrid.innerHTML = '';
         itemKeys.forEach(key => {
@@ -133,8 +131,19 @@
         };
 
         recognition.onerror = function(event) {
-            statusText.innerText = "ไม่ได้ยินเสียงครับ ลองกดอีกครั้ง";
-            statusText.style.color = "#e74c3c";
+            if (event.error === 'no-speech') {
+                if(conversationActive && conversationStep === 1) {
+                    let text = "How can I help you?";
+                    addMessage(text, 'ai');
+                    speakText(text);
+                } else {
+                    statusText.innerText = "ไม่ได้ยินเสียงครับ ลองกดอีกครั้ง";
+                    statusText.style.color = "#e74c3c";
+                }
+            } else {
+                statusText.innerText = "เกิดข้อผิดพลาด ลองกดอีกครั้ง";
+                statusText.style.color = "#e74c3c";
+            }
             stopMic();
         };
 
@@ -159,6 +168,7 @@
                 selectedItemKey = null;
                 highlightItem(null);
                 conversationActive = true;
+                conversationStep = 1;
                 addMessage("Good afternoon. How can I help you?", 'ai');
                 speakText("Good afternoon. How can I help you?", () => { 
                     recognition.start(); 
@@ -198,13 +208,11 @@
         window.speechSynthesis.speak(utterance);
     }
 
-    // สมองของ AI (Smart AI Logic)
     function processInput(text) {
         setTimeout(() => {
             let aiReply = "";
             let itemFound = false;
             
-            // 1. ดักจับชื่อสินค้าที่เด็กพูด
             if (text.includes("key ring") || text.includes("keyring")) { selectedItemKey = 'keyrings'; itemFound = true; }
             else if (text.includes("doll")) { selectedItemKey = 'doll'; itemFound = true; }
             else if (text.includes("flask") || text.includes("bottle") || text.includes("water")) { selectedItemKey = 'flask'; itemFound = true; }
@@ -216,50 +224,56 @@
 
             if (selectedItemKey) highlightItem(selectedItemKey);
 
-            // เก็บแต้ม: ถ้าบอกความต้องการหรือบอกชื่อของได้
-            if (text.includes("buy") || text.includes("want") || text.includes("souvenir") || itemFound) {
-                if(currentScore === 0) currentScore = 1;
-            }
-
-            // 2. ตอบสนองตามบริบท
-            if (text.includes("no") || text.includes("don't want")) {
-                // ถ้าลูกค้าไม่เอา สุ่มของชิ้นอื่นมานำเสนอ
-                let randomKey = itemKeys[Math.floor(Math.random() * itemKeys.length)];
-                selectedItemKey = randomKey;
-                highlightItem(selectedItemKey);
-                aiReply = `Okay, how about this ${itemDB[randomKey].name}?`;
-            } 
-            else if (text.includes("how much") || text.includes("price") || text.includes("cost")) {
-                if(currentScore < 2) currentScore = 2; // ให้แต้มถามราคา
-                
-                if (selectedItemKey) {
-                    aiReply = `It is ${itemDB[selectedItemKey].priceText} pounds.`;
+            if (conversationStep === 1) {
+                if (text.includes("buy") || text.includes("want") || text.includes("souvenir") || itemFound) {
+                    if(currentScore === 0) currentScore = 1;
+                    if (!selectedItemKey) {
+                        let randomKey = itemKeys[Math.floor(Math.random() * itemKeys.length)];
+                        selectedItemKey = randomKey;
+                        highlightItem(selectedItemKey);
+                        aiReply = `How about this ${itemDB[randomKey].name}?`;
+                    } else {
+                        aiReply = `Do you want to know the price of the ${itemDB[selectedItemKey].name}?`;
+                    }
+                    conversationStep = 2;
                 } else {
-                    aiReply = "Which one? Please tell me what you want first.";
+                    aiReply = "Sorry, I didn't catch that. How can I help you?";
                 }
-            }
-            else if (text.includes("here you are") || text.includes("here") || text.includes("take")) {
-                aiReply = "Thank you! Have a nice day.";
-                if(currentScore < 3) currentScore = 3; // ให้แต้มจบการขาย
-                conversationActive = false; // จบเกม
-            }
-            else {
-                // กรณีพูดประโยคทั่วไป หรือเสนอขายครั้งแรก
-                if (!selectedItemKey) {
-                    // ถ้ายังไม่เลือกของ ให้ AI สุ่มเสนอ
+            } 
+            else if (conversationStep === 2) {
+                if (text.includes("no") || text.includes("don't want")) {
                     let randomKey = itemKeys[Math.floor(Math.random() * itemKeys.length)];
                     selectedItemKey = randomKey;
                     highlightItem(selectedItemKey);
-                    aiReply = `How about this ${itemDB[randomKey].name}?`;
-                } else {
-                    // ถ้ามีของที่สนใจอยู่แล้ว
+                    aiReply = `Okay, how about this ${itemDB[randomKey].name}?`;
+                } 
+                else if (text.includes("how much") || text.includes("price") || text.includes("cost")) {
+                    if(currentScore < 2) currentScore = 2;
+                    if (selectedItemKey) {
+                        aiReply = `It is ${itemDB[selectedItemKey].priceText} pounds.`;
+                        conversationStep = 3;
+                    } else {
+                        aiReply = "Which one? Please tell me what you want first.";
+                    }
+                } else if (itemFound) {
                     aiReply = `Do you want to know the price of the ${itemDB[selectedItemKey].name}?`;
+                } else {
+                    aiReply = "Sorry, I don't understand. Do you want to know the price?";
+                }
+            }
+            else if (conversationStep === 3) {
+                if (text.includes("here you are") || text.includes("here") || text.includes("take")) {
+                    aiReply = "Thank you! Have a nice day.";
+                    if(currentScore < 3) currentScore = 3;
+                    conversationActive = false;
+                } else {
+                    aiReply = "Sorry, I didn't catch that. Please say 'Here you are' to give me the money.";
                 }
             }
 
             addMessage(aiReply, 'ai');
             speakText(aiReply, () => {
-                if (!conversationActive) {
+                if (!conversationActive && currentScore > 0) {
                     showScoreModal();
                 }
             });
