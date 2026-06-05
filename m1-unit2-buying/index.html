@@ -52,8 +52,11 @@
     let recognition;
     let isListening = false;
     let conversationStep = 0;
+    
+    // กำหนดตัวแปรเพื่อจำว่าเด็กเลือกของชิ้นไหนและราคาเท่าไหร่
+    let currentItem = "teddy bear";
+    let currentPrice = "ten";
 
-    // ตรวจสอบการรองรับ SpeechRecognition ของเบราว์เซอร์
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     
     if (SpeechRecognition) {
@@ -97,7 +100,6 @@
             recognition.stop();
         } else {
             if (conversationStep === 0) {
-                // AI เริ่มคุยก่อน
                 chatBox.innerHTML = ''; 
                 addMessage("Good afternoon. How can I help you?", 'ai');
                 speakText("Good afternoon. How can I help you?", () => { 
@@ -139,14 +141,18 @@
         window.speechSynthesis.speak(utterance);
     }
 
-    // ระบบเช็คคำพูด (Keyword Matching) แบบง่ายๆ
     function processInput(text) {
         setTimeout(() => {
             let aiReply = "";
             
+            // AI ดักจับชื่อสินค้าที่เด็กพูด เพื่อเปลี่ยนราคาให้ถูกต้อง
+            if (text.includes("umbrella")) { currentItem = "umbrella"; currentPrice = "twelve"; }
+            else if (text.includes("water bottle") || text.includes("bottle")) { currentItem = "water bottle"; currentPrice = "five"; }
+            else if (text.includes("teddy bear") || text.includes("bear")) { currentItem = "teddy bear"; currentPrice = "ten"; }
+            
             if (conversationStep === 1) {
-                if (text.includes("buy") || text.includes("want") || text.includes("souvenir")) {
-                    aiReply = "How about this teddy bear?";
+                if (text.includes("buy") || text.includes("want") || text.includes("souvenir") || text.includes(currentItem)) {
+                    aiReply = `How about this ${currentItem}?`;
                     conversationStep++;
                 } else {
                     aiReply = "Sorry, I didn't catch that. Do you want to buy a souvenir?";
@@ -154,10 +160,13 @@
             } 
             else if (conversationStep === 2) {
                 if (text.includes("how much") || text.includes("price") || text.includes("idea")) {
-                    aiReply = "It's ten pounds.";
+                    aiReply = `It's ${currentPrice} pounds.`;
                     conversationStep++;
+                } else if (text.includes("buy") || text.includes("want")) {
+                    // กรณีเด็กเปลี่ยนใจเลือกของชิ้นใหม่กะทันหัน
+                    aiReply = `Okay, how about this ${currentItem}?`;
                 } else {
-                    aiReply = "It is very cute. Do you want to know the price?";
+                    aiReply = `Do you want to know the price?`;
                 }
             }
             else if (conversationStep === 3) {
