@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Speaking Practice - Buying Things</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
+<style>
+    :root { --primary: #3498db; --primary-dark: #2980b9; }
+    body { font-family: 'Sarabun', sans-serif; background-color: #f4f6f7; padding: 20px; display: flex; justify-content: center; }
+    .app-container { width: 100%; max-width: 500px; background: white; border-radius: 20px; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); border: 3px solid var(--primary); text-align: center; }
+    .items { display: flex; justify-content: space-around; margin-bottom: 20px; }
+    .item { background: #ebf5fb; padding: 10px; border-radius: 10px; border: 1px solid #d6eaf8; width: 30%; font-weight: bold; color: #2c3e50;}
+    
+    .chat-box { background: #fdfefe; height: 300px; border: 2px solid #ecf0f1; border-radius: 10px; padding: 15px; overflow-y: auto; text-align: left; margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px;}
+    .msg { padding: 12px; border-radius: 12px; max-width: 80%; font-size: 16px; line-height: 1.4;}
+    .msg-ai { background: #d6eaf8; align-self: flex-start; border-bottom-left-radius: 0; color: #154360; font-weight: bold;}
+    .msg-user { background: #d5f5e3; align-self: flex-end; border-bottom-right-radius: 0; color: #186a3b; }
+    
+    .btn-mic { background: #e74c3c; color: white; border: none; width: 70px; height: 70px; border-radius: 50%; font-size: 30px; cursor: pointer; box-shadow: 0 4px 0 #c0392b; transition: 0.2s; display: flex; align-items: center; justify-content: center; margin: 0 auto;}
+    .btn-mic:active { transform: translateY(4px); box-shadow: none; }
+    .btn-mic.listening { background: #2ecc71; box-shadow: 0 4px 0 #27ae60; animation: pulse 1s infinite; }
+    
+    @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+    #status-text { color: #7f8c8d; font-size: 15px; margin-top: 15px; font-weight: bold;}
+</style>
+</head>
+<body>
+
+<div class="app-container">
+    <h2 style="color: var(--primary-dark); margin-top: 0;">🎙️ Speaking Practice</h2>
+    
+    <div class="items">
+        <div class="item">🌂<br>Umbrella<br>£12</div>
+        <div class="item">💧<br>Water bottle<br>£5</div>
+        <div class="item">🧸<br>Teddy bear<br>£10</div>
+    </div>
+    
+    <div class="chat-box" id="chat-box">
+        <div style="text-align: center; color: #bdc3c7; font-size: 14px;">เริ่มการสนทนาโดยกดปุ่มไมค์</div>
+    </div>
+    
+    <button class="btn-mic" id="mic-btn" onclick="toggleMic()">🎤</button>
+    <p id="status-text">กดไมค์เพื่อเริ่มบทสนทนา</p>
+</div>
+
+<script>
+    const chatBox = document.getElementById('chat-box');
+    const micBtn = document.getElementById('mic-btn');
+    const statusText = document.getElementById('status-text');
+    
+    let recognition;
+    let isListening = false;
+    let conversationStep = 0;
+
+    // ตรวจสอบการรองรับ SpeechRecognition ของเบราว์เซอร์
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (SpeechRecognition) {
+        recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-GB';
+
+        recognition.onstart = function() {
+            isListening = true;
+            micBtn.classList.add('listening');
+            statusText.innerText = "กำลังฟัง... พูดได้เลยครับ";
+            statusText.style.color = "#27ae60";
+        };
+
+        recognition.onresult = function(event) {
+            const transcript = event.results[0][0].transcript.toLowerCase();
+            addMessage(transcript, 'user');
+            processInput(transcript);
+        };
+
+        recognition.onerror = function(event) {
+            statusText.innerText = "ไม่ได้ยินเสียงครับ ลองกดไมค์พูดใหม่อีกครั้ง";
+            statusText.style.color = "#e74c3c";
+            stopMic();
+        };
+
+        recognition.onend = function() {
+            stopMic();
+        };
+    } else {
+        statusText.innerText = "เบราว์เซอร์ไม่รองรับ แนะนำให้เปิดใน Google Chrome ครับ";
+        statusText.style.color = "#e74c3c";
+        micBtn.style.display = "none";
+    }
+
+    function toggleMic() {
+        if (!SpeechRecognition) return;
+        
+        if (isListening) {
+            recognition.stop();
+        } else {
+            if (conversationStep === 0) {
+                // AI เริ่มคุยก่อน
+                chatBox.innerHTML = ''; 
+                addMessage("Good afternoon. How can I help you?", 'ai');
+                speakText("Good afternoon. How can I help you?", () => { 
+                    recognition.start(); 
+                });
+                conversationStep++;
+            } else {
+                recognition.start();
+            }
+        }
+    }
+
+    function stopMic() {
+        isListening = false;
+        micBtn.classList.remove('listening');
+        if(conversationStep > 0) {
+            statusText.innerText = "กดไมค์เพื่อตอบกลับ";
+            statusText.style.color = "#7f8c8d";
+        }
+    }
+
+    function addMessage(text, sender) {
+        const msgDiv = document.createElement('div');
+        msgDiv.classList.add('msg', sender === 'ai' ? 'msg-ai' : 'msg-user');
+        msgDiv.innerText = text;
+        chatBox.appendChild(msgDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function speakText(text, callback) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-GB';
+        utterance.rate = 0.9;
+        
+        utterance.onend = function() {
+            if(callback) setTimeout(callback, 300);
+        };
+        window.speechSynthesis.speak(utterance);
+    }
+
+    // ระบบเช็คคำพูด (Keyword Matching) แบบง่ายๆ
+    function processInput(text) {
+        setTimeout(() => {
+            let aiReply = "";
+            
+            if (conversationStep === 1) {
+                if (text.includes("buy") || text.includes("want") || text.includes("souvenir")) {
+                    aiReply = "How about this teddy bear?";
+                    conversationStep++;
+                } else {
+                    aiReply = "Sorry, I didn't catch that. Do you want to buy a souvenir?";
+                }
+            } 
+            else if (conversationStep === 2) {
+                if (text.includes("how much") || text.includes("price") || text.includes("idea")) {
+                    aiReply = "It's ten pounds.";
+                    conversationStep++;
+                } else {
+                    aiReply = "It is very cute. Do you want to know the price?";
+                }
+            }
+            else if (conversationStep === 3) {
+                if (text.includes("here") || text.includes("you are") || text.includes("take")) {
+                    aiReply = "Thank you! Have a nice day.";
+                    conversationStep = 0; 
+                } else {
+                    aiReply = "Please say 'Here you are' to give me the money.";
+                }
+            }
+
+            addMessage(aiReply, 'ai');
+            speakText(aiReply);
+        }, 800);
+    }
+</script>
+
+</body>
+</html>
