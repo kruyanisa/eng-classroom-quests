@@ -3,16 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Speaking Practice - Buying Things</title>
+<title>Speaking Practice - Buying Things (Smart AI v2)</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
 <style>
     :root { --primary: #3498db; --primary-dark: #2980b9; }
     body { font-family: 'Sarabun', sans-serif; background-color: #f4f6f7; padding: 20px; display: flex; justify-content: center; }
-    .app-container { width: 100%; max-width: 500px; background: white; border-radius: 20px; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); border: 3px solid var(--primary); text-align: center; }
-    .items { display: flex; justify-content: space-around; margin-bottom: 20px; }
-    .item { background: #ebf5fb; padding: 10px; border-radius: 10px; border: 1px solid #d6eaf8; width: 30%; font-weight: bold; color: #2c3e50;}
+    .app-container { width: 100%; max-width: 600px; background: white; border-radius: 20px; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); border: 3px solid var(--primary); text-align: center; }
     
-    .chat-box { background: #fdfefe; height: 300px; border: 2px solid #ecf0f1; border-radius: 10px; padding: 15px; overflow-y: auto; text-align: left; margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px;}
+    .items-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+    .item { background: #ebf5fb; padding: 8px; border-radius: 8px; border: 1px solid #d6eaf8; font-weight: bold; color: #2c3e50; font-size: 13px;}
+    .item.selected { border-color: #3498db; background-color: #d6eaf8; box-shadow: 0 0 5px rgba(52,152,219,0.5); }
+    
+    .chat-box { background: #fdfefe; height: 320px; border: 2px solid #ecf0f1; border-radius: 10px; padding: 15px; overflow-y: auto; text-align: left; margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px;}
     .msg { padding: 12px; border-radius: 12px; max-width: 80%; font-size: 16px; line-height: 1.4;}
     .msg-ai { background: #d6eaf8; align-self: flex-start; border-bottom-left-radius: 0; color: #154360; font-weight: bold;}
     .msg-user { background: #d5f5e3; align-self: flex-end; border-bottom-right-radius: 0; color: #186a3b; }
@@ -23,24 +25,15 @@
     
     @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
     #status-text { color: #7f8c8d; font-size: 15px; margin-top: 15px; font-weight: bold;}
-
-    /* Modal Styles */
-    #login-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(5px); z-index: 2000; flex-direction: column; justify-content: center; align-items: center; }
-    .modal-box { background: white; padding: 30px; border-radius: 15px; width: 85%; max-width: 350px; box-shadow: 0 15px 30px rgba(0,0,0,0.2); text-align: center; }
-    .modal-box input { width: 90%; padding: 12px; margin-bottom: 15px; border: 1px solid #dfe6e9; border-radius: 8px; font-size: 16px; text-align: center; box-sizing: border-box; }
-    .modal-box button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; }
 </style>
 </head>
 <body>
 
 <div class="app-container">
-    <h2 style="color: var(--primary-dark); margin-top: 0;">🎙️ Speaking Practice</h2>
+    <h2 style="color: var(--primary-dark); margin-top: 0;">🎙️ Speaking Practice (All Items)</h2>
     
-    <div class="items">
-        <div class="item">🌂<br>Umbrella<br>£12</div>
-        <div class="item">💧<br>Water bottle<br>£5</div>
-        <div class="item">🧸<br>Teddy bear<br>£10</div>
-    </div>
+    <div class="items-grid" id="items-grid">
+        </div>
     
     <div class="chat-box" id="chat-box">
         <div style="text-align: center; color: #bdc3c7; font-size: 14px;">เริ่มการสนทนาโดยกดปุ่มไมค์</div>
@@ -50,35 +43,51 @@
     <p id="status-text">กดไมค์เพื่อเริ่มบทสนทนา</p>
 </div>
 
-<div id="login-modal">
-    <div class="modal-box">
-        <h2 style="margin-top: 0; color: var(--primary-dark);">คะแนนของคุณ: <span id="display-score"></span>/3</h2>
-        <p style="font-size: 14px; color: #636e72; margin-bottom: 20px;">กรอกข้อมูลเพื่อส่งคะแนน</p>
-        <input type="text" id="m_name" placeholder="ชื่อ - นามสกุล">
-        <input type="text" id="m_room" placeholder="ชั้น/ห้อง (เช่น ม.1/1)">
-        <input type="text" id="m_id" placeholder="รหัสนักเรียน (5 หลัก)" maxlength="5" oninput="this.value = this.value.replace(/[^0-9]/g, '');">
-        <button id="submitBtnModal" onclick="submitToGoogleSheets()">🚀 ส่งคะแนน</button>
-        <div id="modal-err" style="color:#d63031; font-size:14px; margin-top:10px; display:none;"></div>
-        <div id="saveStatus" style="font-size: 16px; color: #27ae60; margin-top: 15px; font-weight: bold; display: none;"></div>
-        <button onclick="document.getElementById('login-modal').style.display='none'" style="margin-top: 15px; background: transparent; border: none; color: #636e72; text-decoration: underline; cursor: pointer; font-size: 14px;">ปิดหน้าต่าง</button>
-    </div>
-</div>
-
 <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxd_UGE1ZY_1dcB3B7l0Vy8azxhuuFoc_kftJ7QZ1Nc4XIaXGKF9RPs8WxhZ0K5VyVN/exec';
-    const LESSON_NAME = 'ม.1 Unit2 Speaking Practice';
-
     const chatBox = document.getElementById('chat-box');
     const micBtn = document.getElementById('mic-btn');
     const statusText = document.getElementById('status-text');
+    const itemsGrid = document.getElementById('items-grid');
     
     let recognition;
     let isListening = false;
-    let conversationStep = 0;
-    
-    let currentItem = "teddy bear";
-    let currentPrice = "ten";
-    let currentScore = 0;
+    let selectedItemKey = null; // null เมื่อยังไม่ได้เลือก
+    let conversationStep = 0; // 0: Start, 1: SA offers help, 2: Selling, 3: Closing
+
+    // ฐานข้อมูลสินค้าทั้ง 8 อย่างตามรูปแนบ
+    const itemDB = {
+        'keyrings': { name: 'key rings', priceNum: 4, priceText: 'four', icon: '🔑' },
+        'doll': { name: 'doll', priceNum: 6, priceText: 'six', icon: '💂‍♂️' },
+        'flask': { name: 'thermos flask', priceNum: 13, priceText: 'thirteen', icon: '🍶' },
+        'tshirt': { name: 'T-shirt', priceNum: 8, priceText: 'eight', icon: '👕' },
+        'umbrella': { name: 'umbrella', priceNum: 12, priceText: 'twelve', icon: '🌂' },
+        'bell': { name: 'bell', priceNum: 6, priceText: 'six', icon: '🔔' },
+        'teddy': { name: 'teddy bear', priceNum: 4, priceText: 'four', icon: '🧸' },
+        'scarf': { name: 'scarf', priceNum: 8, priceText: 'eight', icon: '🧣' }
+    };
+    const itemKeys = Object.keys(itemDB);
+
+    // สร้าง Grid สินค้า
+    function buildItemsGrid() {
+        itemsGrid.innerHTML = '';
+        itemKeys.forEach(key => {
+            const item = itemDB[key];
+            const itemDiv = document.createElement('div');
+            itemDiv.classList.add('item');
+            itemDiv.id = `item-${key}`;
+            itemDiv.innerHTML = `${item.icon}<br>${item.name}<br>£${item.priceNum}`;
+            itemsGrid.appendChild(itemDiv);
+        });
+    }
+    buildItemsGrid();
+
+    // ไฮไลท์สินค้าที่เลือก
+    function highlightSelectedItem(key) {
+        document.querySelectorAll('.item').forEach(el => el.classList.remove('selected'));
+        if (key) {
+            document.getElementById(`item-${key}`).classList.add('selected');
+        }
+    }
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     
@@ -111,167 +120,4 @@
             stopMic();
         };
     } else {
-        statusText.innerText = "เบราว์เซอร์ไม่รองรับ แนะนำให้เปิดใน Google Chrome ครับ";
-        statusText.style.color = "#e74c3c";
-        micBtn.style.display = "none";
-    }
-
-    function toggleMic() {
-        if (!SpeechRecognition) return;
-        
-        if (isListening) {
-            recognition.stop();
-        } else {
-            if (conversationStep === 0) {
-                chatBox.innerHTML = ''; 
-                currentScore = 0; // รีเซ็ตคะแนน
-                addMessage("Good afternoon. How can I help you?", 'ai');
-                speakText("Good afternoon. How can I help you?", () => { 
-                    recognition.start(); 
-                });
-                conversationStep++;
-            } else {
-                recognition.start();
-            }
-        }
-    }
-
-    function stopMic() {
-        isListening = false;
-        micBtn.classList.remove('listening');
-        if(conversationStep > 0 && conversationStep < 4) {
-            statusText.innerText = "กดไมค์เพื่อตอบกลับ";
-            statusText.style.color = "#7f8c8d";
-        }
-    }
-
-    function addMessage(text, sender) {
-        const msgDiv = document.createElement('div');
-        msgDiv.classList.add('msg', sender === 'ai' ? 'msg-ai' : 'msg-user');
-        msgDiv.innerText = text;
-        chatBox.appendChild(msgDiv);
-        chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    function speakText(text, callback) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'en-GB';
-        utterance.rate = 0.9;
-        
-        utterance.onend = function() {
-            if(callback) setTimeout(callback, 300);
-        };
-        window.speechSynthesis.speak(utterance);
-    }
-
-    function processInput(text) {
-        setTimeout(() => {
-            let aiReply = "";
-            
-            if (text.includes("umbrella")) { currentItem = "umbrella"; currentPrice = "twelve"; }
-            else if (text.includes("water bottle") || text.includes("bottle")) { currentItem = "water bottle"; currentPrice = "five"; }
-            else if (text.includes("teddy bear") || text.includes("bear")) { currentItem = "teddy bear"; currentPrice = "ten"; }
-            
-            // ให้คะแนนตาม Keyword
-            if (conversationStep === 1) {
-                if (text.includes("buy") || text.includes("want") || text.includes("souvenir") || text.includes(currentItem)) {
-                    aiReply = `How about this ${currentItem}?`;
-                    currentScore++;
-                    conversationStep++;
-                } else {
-                    aiReply = "Sorry, I didn't catch that. Do you want to buy a souvenir?";
-                }
-            } 
-            else if (conversationStep === 2) {
-                if (text.includes("how much") || text.includes("price") || text.includes("idea")) {
-                    aiReply = `It's ${currentPrice} pounds.`;
-                    currentScore++;
-                    conversationStep++;
-                } else if (text.includes("buy") || text.includes("want")) {
-                    aiReply = `Okay, how about this ${currentItem}?`;
-                } else {
-                    aiReply = `Do you want to know the price?`;
-                }
-            }
-            else if (conversationStep === 3) {
-                if (text.includes("here") || text.includes("you are") || text.includes("take")) {
-                    aiReply = "Thank you! Have a nice day.";
-                    currentScore++;
-                    conversationStep = 4; // จบบทสนทนา
-                } else {
-                    aiReply = "Please say 'Here you are' to give me the money.";
-                }
-            }
-
-            addMessage(aiReply, 'ai');
-            speakText(aiReply, () => {
-                if (conversationStep === 4) {
-                    showScoreModal();
-                }
-            });
-        }, 800);
-    }
-
-    function showScoreModal() {
-        document.getElementById('display-score').innerText = currentScore;
-        setTimeout(() => {
-            document.getElementById('submitBtnModal').style.display = 'inline-block';
-            document.getElementById('saveStatus').style.display = 'none';
-            document.getElementById('modal-err').style.display = 'none';
-
-            if(localStorage.getItem('studentName')) {
-                document.getElementById('m_name').value = localStorage.getItem('studentName');
-                document.getElementById('m_room').value = localStorage.getItem('studentRoom');
-                document.getElementById('m_id').value = localStorage.getItem('studentId');
-            }
-            document.getElementById('login-modal').style.display = 'flex';
-        }, 1000);
-    }
-
-    async function submitToGoogleSheets() {
-        let n = document.getElementById('m_name').value.trim();
-        let r = document.getElementById('m_room').value.trim();
-        let i = document.getElementById('m_id').value.trim();
-        let err = document.getElementById('modal-err');
-        let stat = document.getElementById('saveStatus');
-        let btn = document.getElementById('submitBtnModal');
-
-        if(!n || !r || i.length !== 5) {
-            err.innerText = "กรุณากรอกข้อมูลให้ครบ และรหัสต้องมี 5 หลัก";
-            err.style.display = 'block';
-            return;
-        }
-        err.style.display = 'none';
-
-        localStorage.setItem('studentName', n);
-        localStorage.setItem('studentRoom', r);
-        localStorage.setItem('studentId', i);
-
-        btn.style.display = 'none';
-        stat.style.display = 'block';
-        stat.innerText = "⏳ กำลังบันทึกคะแนน...";
-
-        const payload = { 
-            name: n, room: r, studentId: i, 
-            lesson: LESSON_NAME, score: currentScore, maxScore: 3, 
-            _t: new Date().getTime() 
-        };
-
-        try {
-            await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
-            stat.innerText = '✅ บันทึกคะแนนเรียบร้อย!';
-            setTimeout(() => { 
-                document.getElementById('login-modal').style.display = 'none'; 
-                conversationStep = 0; 
-                statusText.innerText = "กดไมค์เพื่อเริ่มรอบใหม่";
-            }, 2000);
-        } catch(error) {
-            stat.innerText = '❌ ส่งข้อมูลไม่สำเร็จ';
-            btn.style.display = 'inline-block';
-        }
-    }
-</script>
-
-</body>
-</html>
+        statusText.innerText = "เบราว์เซอร์ไม่รองรับ แนะนำให้เปิดใน Google Chrome ครับก๊อปปี้โค้ดด้านบนนี้ ไปวางทับในไฟล์ `index.html` บน GitHub ของคุณ แล้วกด **"Commit changes"** ได้เลยครับ คราวนี้พนักงานขาย AI จะฉลาดขึ้น มีสินค้าครบทั้ง 8 อย่าง และไม่ล็อกขั้นตอนจนดู "จะขายอย่างเดียว" เหมือนเดิมแล้วครับ
